@@ -1,17 +1,18 @@
-
-
 I=imread('Aletta.(Isekai.Shokudou).600.2121109.jpg');
 [M,N,nc]=size(I);
+
 if mod(M,2)==1
     M=M+1;
 end
 if mod(N,2)==1
     N=N+1;
 end
+
 I=imresize(I,[M N]);
 subplot(131)
 imshow(I)
 title('Original Image')
+
 rounds=2;
 for i=1:nc
     [I_enc(:,:,i),SX{i}]=Encrypt(I(:,:,i),rounds);

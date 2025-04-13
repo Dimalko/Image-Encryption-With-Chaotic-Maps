@@ -1,7 +1,6 @@
 import cv2
 import math
 import numpy as np
-import matplotlib.pyplot as plt
 
 
 #display image
@@ -107,22 +106,3 @@ disp_img("Encrypted Image", enc_img)
 dec_img = np.bitwise_xor(enc_img, keystream_array)
 #display decrypted image
 disp_img("Decrypted Image", dec_img)
-
-
-
-# Display histograms of original, encrypted, and decrypted images
-plt.figure(figsize=(12, 4))
-
-plt.subplot(1, 3, 1)
-plt.hist(im_array.ravel(), bins=256, color='black', alpha=0.7)
-plt.title("Histogram - Original Image")
-
-plt.subplot(1, 3, 2)
-plt.hist(enc_img.ravel(), bins=256, color='red', alpha=0.7)
-plt.title("Histogram - Encrypted Image")
-
-plt.subplot(1, 3, 3)
-plt.hist(dec_img.ravel(), bins=256, color='green', alpha=0.7)
-plt.title("Histogram - Decrypted Image")
-
-plt.show()
