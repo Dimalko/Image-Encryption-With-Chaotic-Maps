@@ -1,11 +1,15 @@
 function I_dec=Decrypt(I_enc,SS)
+
+
 if nargin<2
     error('You must enter all the data : Encrypted Image and the Key')
 end
 if isa(SS,'cell')~=1
     error('The Key must be Cell')
 end
+
 [M,N,nc]=size(I_enc);
+
 C=double(I_enc);
 A_=[34 -55;-55 89];
 rounds=length(SS);

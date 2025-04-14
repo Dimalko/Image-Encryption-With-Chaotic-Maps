@@ -46,6 +46,8 @@ def gingerbread_man_map(x, y):
     y2 = x
     return x2, y2
 
+
+#Encrypt method
 def Encrypt(I, rounds=2, dim=1):
     if I is None:
         raise ValueError("You must enter at least the image")
@@ -109,9 +111,9 @@ def Encrypt(I, rounds=2, dim=1):
                 Cx = np.array([[R_[i, j], R_[i, j+1]],
                                [R_[i+1, j], R_[i+1, j+1]]])
                 fz = np.dot(Cx, A)
-                C[i, j] = fz[0, 0], 
-                C[i, j+1] = fz[0, 1],
-                C[i+1, j] = fz[1, 0], 
+                C[i, j] = fz[0, 0]
+                C[i, j+1] = fz[0, 1]
+                C[i+1, j] = fz[1, 0]
                 C[i+1, j+1] = fz[1, 1]
 
         I = np.mod(C, 256).astype(np.uint8)
@@ -119,10 +121,40 @@ def Encrypt(I, rounds=2, dim=1):
     return I, SS
 
 
+#Decrypt method
+def Decrypt(I_enc, SS):
+    
+    I_enc = I_enc.astype(np.uint8)
+    M, N = I_enc.shape
 
+    C = I_enc.astype(np.float64)
+    A_ = np.array([[34, -55], [-55, 89]])
 
+    rounds = len(SS)
 
+    for round_iter in range(rounds-1, -1, -1):
+        D = np.zeros_like(C)
 
+        for i in range (0, M, 2):
+            for j in range(0, N, 2):
+                Cx = np.array([
+                    [C[i, j], C[i, j+1]],
+                     [C[i+1, j], C[i+1, j+1]]
+                ])
+                fz = np.dot(Cx, A_)
+                D[i, j]     = fz[0, 0]
+                D[i, j+1]   = fz[0, 1]
+                D[i+1, j]   = fz[1, 0]
+                D[i+1, j+1] = fz[1, 1]
+        
+        S = SS[round_iter]
+        S2 = np.argsort(S)
+        W = D.flatten()
+        ER = W[S2]
+        C = ER.reshape((M, N))
+        C = np.mod(C, 256)
+
+    return C.astype(np.uint8)
 
 
 
@@ -156,25 +188,18 @@ plt.subplot(132)
 plt.imshow(cv2.cvtColor(I_enc, cv2.COLOR_BGR2RGB))
 plt.title('Encrypted Image')
 
+
+# Decrypt each channel
+I_dec = np.zeros_like(I_enc)
+
+I_dec = Decrypt(I_enc, SX)
+
+# Display the decrypted image
+plt.subplot(133)
+plt.imshow(cv2.cvtColor(I_dec, cv2.COLOR_BGR2RGB))
+plt.title('Decrypted Image')
+
 plt.show()
-
-
-# Decrypt the image (You'll need to define the Decrypt function)
-# This is a placeholder for the Decrypt function
-# def Decrypt(image, SX):
-#     # Decryption logic here (this is a placeholder)
-#     decrypted_image = image  # Replace with actual decryption logic
-#     return decrypted_image
-
-# # Decrypt each channel
-# I_dec = np.zeros_like(I)
-# for i in range(nc):
-#     I_dec[:, :, i] = Decrypt(I_enc[:, :, i], SX[i])
-
-# # Display the decrypted image
-# plt.subplot(133)
-# plt.imshow(cv2.cvtColor(I_dec, cv2.COLOR_BGR2RGB))
-# plt.title('Decrypted Image')
 
 
 
