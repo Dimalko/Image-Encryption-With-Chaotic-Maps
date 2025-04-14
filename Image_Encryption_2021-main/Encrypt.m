@@ -6,12 +6,14 @@ elseif nargin<2
     rounds=2;
     warning('Rounds not found, we will use 2 rounds')
 end
+
 rounds=ceil(rounds);
 if rounds<1
     error('Rounds is less than 1')
 end
 
 [M,N]=size(I);
+
 % To Make Sure That image size is even
 if mod(M,2)==1
     I(M+1,:)=uint8(0);
@@ -24,6 +26,9 @@ end
 
 MN=M*N;
 
+
+//------------------------
+//-------------------------------------
 for round_iter=1:rounds
     % #2
     P=double(I(:));
@@ -46,14 +51,18 @@ for round_iter=1:rounds
     N0=.9865*MN/3;
     MN3=ceil(MN/3);
     [T,Y]=ode45(L,[N0 MN3],x);
+    
     % #4
     L=Y(1:MN3,1:2:5);
     L=L(:);L=L(1:MN);
+    
     % #5
     [L2,S]=sort(L);
     SS{round_iter}=S;
+    
     % #6
     R=P(S);
+    
     % #7
     R_=reshape(R,[M N]);
     A=[89 55;55 34];
@@ -71,4 +80,7 @@ for round_iter=1:rounds
     I=mod(C,256);
     P=I(:);
 end
+//----------------------------
+//------------------------------------
+
 I_enc=uint8(I);
