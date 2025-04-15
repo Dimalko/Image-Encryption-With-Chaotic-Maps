@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import warnings
 
 
-# --- 1D Chaos Maps ---
+#1D Chaotic Maps
 def logistic_map(x):
     a = 3.99
     return a * x * (1 - x)
@@ -26,7 +26,7 @@ def cosine_polynomial_map(x):
     a = 2.5
     return math.cos(a * (x**3 + x))
 
-# --- 2D Chaos Maps ---
+#2D Chaotic Maps
 def henon_map(x, y):
     a = 1.4
     b = 0.3
@@ -47,7 +47,8 @@ def gingerbread_man_map(x, y):
     return x2, y2
 
 
-#Encrypt method
+
+#Encrypt Method
 def Encrypt(I, rounds=2, dim=1):
     if I is None:
         raise ValueError("You must enter at least the image")
@@ -121,7 +122,8 @@ def Encrypt(I, rounds=2, dim=1):
     return I, SS
 
 
-#Decrypt method
+
+#Decrypt Method
 def Decrypt(I_enc, SS):
     
     I_enc = I_enc.astype(np.uint8)
@@ -157,61 +159,46 @@ def Decrypt(I_enc, SS):
     return C.astype(np.uint8)
 
 
-
-# Read the image
+#Usage Example
 I = cv2.imread("files/testing_color.png",0)
 M, N = I.shape
 
-# Ensure M and N are even
 if M % 2 == 1:
     M += 1
 if N % 2 == 1:
     N += 1
 
-# Resize the image to the adjusted dimensions
 I = cv2.resize(I, (N, M))
 
-# Display the original image
 plt.subplot(131)
 plt.imshow(cv2.cvtColor(I, cv2.COLOR_BGR2RGB))
 plt.title('Original Image')
 
+
 rounds = 2
 I_enc = np.zeros_like(I)
 
-# Encrypt each channel
-SX = {}
 I_enc, SX = Encrypt(I, rounds)
 
-# Display the encrypted image
 plt.subplot(132)
 plt.imshow(cv2.cvtColor(I_enc, cv2.COLOR_BGR2RGB))
 plt.title('Encrypted Image')
 
 
-# Decrypt each channel
 I_dec = np.zeros_like(I_enc)
-
 I_dec = Decrypt(I_enc, SX)
 
-# Display the decrypted image
 plt.subplot(133)
 plt.imshow(cv2.cvtColor(I_dec, cv2.COLOR_BGR2RGB))
 plt.title('Decrypted Image')
-
 plt.show()
 
 
+y1 = I.flatten()
+y2 = I_dec.flatten()
+MSE = np.sum((y1 - y2) ** 2) / len(y1)
 
-# # Calculate MSE and PSNR
-# y1 = I.flatten()
-# y2 = I_dec.flatten()
-# MSE = np.sum((y1 - y2) ** 2) / len(y1)
+impsnr = cv2.PSNR(I_dec, I)
 
-# impsnr = psnr(I_dec, I)
-
-# # Show MSE and PSNR values
-# print(f'MSE: {MSE}')
-# print(f'PSNR: {impsnr}')
-
-# plt.show()
+print(f'MSE: {MSE}')
+print(f'PSNR: {impsnr}')
