@@ -2,7 +2,6 @@ import cv2
 import math
 import numpy as np
 import matplotlib.pyplot as plt
-import warnings
 
 
 #1D Chaotic Maps
@@ -70,21 +69,21 @@ def Encrypt(I, rounds=2):
     for round_iter in range(rounds):
         P = I.flatten().astype(np.float64)
 
-        y0 = 0.5
         x0 = (np.sum(P) + MN) / (MN + 2**23)
+        y0 = 0.5 #maybe x1 = np.mod(x0*1e6, 1)
         
         seq = np.zeros(MN)
         
         if dim == 1:
-            x = x0 % 1
+            x = x0
             for i in range(MN):
                 x = cosine_polynomial_map(x)
                 seq[i] = x
         elif dim == 2:
             x, y = x0, y0
             for i in range(MN):
-                x, y = gingerbread_man_map(x, y)
-                seq[i] = (x + 1) / 2 
+                x, y = henon_map(x, y)
+                seq[i] = (x + y)
 
         S = np.argsort(seq)
         SS.append(S)
@@ -148,7 +147,7 @@ def Decrypt(I_enc, SS):
 
 
 #Usage Example
-I = cv2.imread("files/testing_color.png",0)
+I = cv2.imread("files/peppers_color.tif",0)
 M, N = I.shape
 
 if M % 2 == 1:
