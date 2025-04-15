@@ -1,41 +1,46 @@
 import cv2
 import math
 import numpy as np
-from scipy.integrate import solve_ivp
+import matplotlib.pyplot as plt
+import warnings
 
 
-#display image
-def disp_img(n, i):
-    cv2.imshow(n, i)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
-
-
-
-#generate a keystream using a logistic map
-def logistic_map(x, a):
+#1D Chaotic Maps
+def logistic_map(x):
+    a = 3.99
     return a * x * (1 - x)
 
-def tent_map(x, a):
-    if x > 0.5:
-        return (a * x) % 1 #keeps x within 0 and 1
-    else:
-        return (a * (1 - x)) % 1
-    
-def sine_map(x, a):
+def tent_map(x):
+    a = 1.99
+    return (a * x) % 1 if x > 0.5 else (a * (1 - x)) % 1
+
+def sine_map(x):
+    a = 0.97
     return a * math.sin(math.pi * x)
 
-def cubic_map(x, a):
+def cubic_map(x):
+    a = 2.59
     return a * x * (1 - x**2)
 
-def cosine_polynomial_map(x, a):
+def cosine_polynomial_map(x):
+    a = 2.5
     return math.cos(a * (x**3 + x))
 
-def henon_map(x, y, a, b):
+#2D Chaotic Maps
+def henon_map(x, y):
+    a = 1.4
+    b = 0.3
     x2 = 1 - a * x**2 + y
     y2 = b * x
+    return max(-1, min(1, x2)), y2
 
-    x2 = max(-1, min(1, x2))  #keeps x between -1 and 1 to prevent overflow error
+def lozi_map(x, y):
+    a = 1.7
+    b = 0.5
+    x2 = 1 + y - a * abs(x)
+    x2 = np.clip(x2, -1e10, 1e10)
+    y2 = b * x
+    y2 = np.clip(y2, -1e10, 1e10)
     return x2, y2
 
 def gingerbread_man_map(x, y):
@@ -43,113 +48,49 @@ def gingerbread_man_map(x, y):
     y2 = x
     return x2, y2
 
-def lozi_map(x, y, a, b):
-    x2 = 1 + y - a * abs(x)
-    y2 = b * x
-    return x2, y2
+
+
+#Encrypt Method
+def Encrypt(I, rounds=2):
+    dim = 2
     
-
-
-#load image
-img = cv2.imread("files/testing_color.png",0)
-
-#convert image to array format
-im_array = np.array(img)
-rows, cols = im_array.shape
-
-#choose dimentions of the map
-dimentions = 2 #accepted values: 1 or 2 only
-
-#initialize parameters
-x = 0.002
-y = 0.3
-l = 1.4 #parameter 1
-m = 0.3 #parameter 2
-chaos = 3064
-
-#encrypted machine
-if dimentions == 1:
-    keystream = []
-    keystream_values = []
-    
-    for i in range(im_array.size):
-        x = tent_map(x, l)
-        keystream_values.append(x) #store for graph
-        _x = int(x * chaos) %256
-        keystream.append(_x)
-        #print(f"Iteration {i} x={x}")
-
-elif dimentions == 2:
-    keystream = np.zeros((rows, cols), dtype=np.uint8)
-    keystream_values = []
-    
-    for i in range(rows):
-        for j in range(cols):
-            x, y = lozi_map(x, y, l, m)
-            keystream_values.append(x) #store for graph
-            _xy = int((x + y) * chaos) %256
-            keystream[i, j] = _xy
-            #print(f"Iteration {i}, {j}: x={x}, y={y}")
-
-
-#convert keystream to same shape as image
-keystream_array = np.array(keystream, dtype=np.uint8).reshape(rows, cols)
-
-#display image
-disp_img("Grayscaled Image", img)
-
-#encryption: apply XOR operation
-enc_img = np.bitwise_xor(im_array, keystream_array)
-#display encrypted image
-disp_img("Encrypted Image", enc_img)
-
-#decryption: apply XOR operation again
-dec_img = np.bitwise_xor(enc_img, keystream_array)
-#display decrypted image
-disp_img("Decrypted Image", dec_img)
-
-
-def encrypt(I, rounds=2):
     I = I.astype(np.uint8)
     M, N = I.shape
+
+    if M % 2 == 1:
+        I = np.vstack((I, np.zeros((1, N), dtype=np.uint8)))
+        M += 1
+    if N % 2 == 1:
+        I = np.hstack((I, np.zeros((M, 1), dtype=np.uint8)))
+        N += 1
+
     MN = M * N
     SS = []
 
     for round_iter in range(rounds):
-        # Step 2: Flatten and convert to double
         P = I.flatten().astype(np.float64)
 
-        # Step 3: Initial x array
-        x = [(np.sum(P) + MN) / (MN + (2**23))]
-        for i in range(2, 7):
-            x.append(np.mod(x[i-1] * 1e6, 1))
+        y0 = 0.5
+        x0 = (np.sum(P) + MN) / (MN + 2**23)
+        
+        seq = np.zeros(MN)
+        
+        if dim == 1:
+            x = x0 % 1
+            for i in range(MN):
+                x = cosine_polynomial_map(x)
+                seq[i] = x
+        elif dim == 2:
+            x, y = x0, y0
+            for i in range(MN):
+                x, y = gingerbread_man_map(x, y)
+                seq[i] = (x + 1) / 2 
 
-        # Step 4: Define chaotic system
-        def L(t, x):
-            a, b, c, d, e, r = 10, 8/3, 28, -1, 8, 3
-            return [
-                a * (x[1] - x[0]) + x[3] - x[4] - x[5],
-                c * x[0] - x[1] - x[0] * x[2],
-                -b * x[2] + x[0] * x[1],
-                d * x[3] - x[1] * x[2],
-                e * x[5] + x[2] * x[1],
-                r * x[0]
-            ]
-
-        N0 = 0.9865 * MN / 3
-        MN3 = int(np.ceil(MN / 3))
-        sol = solve_ivp(L, [N0, MN3], x, t_eval=np.linspace(N0, MN3, MN3))
-        Y = sol.y.T
-
-        # Step 5: Prepare L and get permutation S
-        L_vals = Y[:MN3, [0, 2, 4]].flatten()[:MN]
-        S = np.argsort(L_vals)
+        S = np.argsort(seq)
         SS.append(S)
 
-        # Step 6: Apply permutation
         R = P[S]
 
-        # Step 7: Reshape and perform matrix multiplication
         R_ = R.reshape(M, N)
         A = np.array([[89, 55], [55, 34]])
         C = np.zeros((M, N), dtype=np.float64)
@@ -159,9 +100,108 @@ def encrypt(I, rounds=2):
                 Cx = np.array([[R_[i, j], R_[i, j+1]],
                                [R_[i+1, j], R_[i+1, j+1]]])
                 fz = np.dot(Cx, A)
-                C[i, j], C[i, j+1] = fz[0, 0], fz[0, 1]
-                C[i+1, j], C[i+1, j+1] = fz[1, 0], fz[1, 1]
+                C[i, j] = fz[0, 0]
+                C[i, j+1] = fz[0, 1]
+                C[i+1, j] = fz[1, 0]
+                C[i+1, j+1] = fz[1, 1]
 
         I = np.mod(C, 256).astype(np.uint8)
 
     return I, SS
+
+
+
+#Decrypt Method
+def Decrypt(I_enc, SS):
+    
+    I_enc = I_enc.astype(np.uint8)
+    M, N = I_enc.shape
+
+    C = I_enc.astype(np.float64)
+    A_ = np.array([[34, -55], [-55, 89]])
+
+    rounds = len(SS)
+
+    for round_iter in range(rounds-1, -1, -1):
+        D = np.zeros_like(C)
+
+        for i in range (0, M, 2):
+            for j in range(0, N, 2):
+                Cx = np.array([
+                    [C[i, j], C[i, j+1]],
+                     [C[i+1, j], C[i+1, j+1]]
+                ])
+                fz = np.dot(Cx, A_)
+                D[i, j]     = fz[0, 0]
+                D[i, j+1]   = fz[0, 1]
+                D[i+1, j]   = fz[1, 0]
+                D[i+1, j+1] = fz[1, 1]
+        
+        S = SS[round_iter]
+        S2 = np.argsort(S)
+        W = D.flatten()
+        ER = W[S2]
+        C = ER.reshape((M, N))
+        C = np.mod(C, 256)
+
+    return C.astype(np.uint8)
+
+
+#Usage Example
+I = cv2.imread("files/testing_color.png",0)
+M, N = I.shape
+
+if M % 2 == 1:
+    M += 1
+if N % 2 == 1:
+    N += 1
+
+I = cv2.resize(I, (N, M))
+
+plt.subplot(2, 3, 1)
+plt.imshow(cv2.cvtColor(I, cv2.COLOR_BGR2RGB))
+plt.title('Original Image')
+
+
+rounds = 2
+I_enc = np.zeros_like(I)
+
+I_enc, SX = Encrypt(I, rounds)
+
+plt.subplot(2, 3, 2)
+plt.imshow(cv2.cvtColor(I_enc, cv2.COLOR_BGR2RGB))
+plt.title('Encrypted Image')
+
+
+I_dec = np.zeros_like(I_enc)
+I_dec = Decrypt(I_enc, SX)
+
+plt.subplot(2, 3, 3)
+plt.imshow(cv2.cvtColor(I_dec, cv2.COLOR_BGR2RGB))
+plt.title('Decrypted Image')
+
+
+
+y1 = I.flatten()
+y2 = I_dec.flatten()
+MSE = np.sum((y1 - y2) ** 2) / len(y1)
+
+impsnr = cv2.PSNR(I_dec, I)
+
+print(f'MSE: {MSE}')
+print(f'PSNR: {impsnr}')
+
+
+plt.subplot(2, 3, 4)
+plt.hist(I.ravel(), bins=256, color='blue')
+plt.title("Histogram - Original Image")
+
+plt.subplot(2, 3, 5)
+plt.hist(I_enc.ravel(), bins=256, color='red')
+plt.title("Histogram - Encrypted Image")
+
+plt.subplot(2, 3, 6)
+plt.hist(I_dec.ravel(), bins=256, color='green')
+plt.title("Histogram - Decrypted Image")
+
+plt.show()
