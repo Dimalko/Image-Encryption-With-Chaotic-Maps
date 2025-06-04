@@ -1,4 +1,4 @@
-I=imread('Aletta.(Isekai.Shokudou).600.2121109.jpg');
+I=imread('boat.tiff');
 [M,N,nc]=size(I);
 
 if mod(M,2)==1

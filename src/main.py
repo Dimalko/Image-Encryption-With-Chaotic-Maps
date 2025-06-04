@@ -2,6 +2,7 @@ import cv2
 import math
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.integrate import solve_ivp
 
 
 #1D Chaotic Maps
@@ -31,7 +32,7 @@ def henon_map(x, y):
     b = 0.3
     x2 = 1 - a * x**2 + y
     y2 = b * x
-    return max(-1, min(1, x2)), y2
+    return x2, y2
 
 def lozi_map(x, y):
     a = 1.7
@@ -47,11 +48,21 @@ def gingerbread_man_map(x, y):
     y2 = x
     return x2, y2
 
+#6D Chaotic Map
+def hyperchaotic_ode(t, x, a=10, b=8/3, c=28, d=-1, e=8, r=3):
+    dx1 = a * (x[1] - x[0]) + x[3] - x[4] - x[5]
+    dx2 = c * x[0] - x[1] - x[0] * x[2]
+    dx3 = -b * x[2] + x[0] * x[1]
+    dx4 = d * x[3] - x[1] * x[2]
+    dx5 = e * x[5] + x[2] * x[1]
+    dx6 = r * x[0]
+    return [dx1, dx2, dx3, dx4, dx5, dx6]
+
 
 
 #Encrypt Method
 def Encrypt(I, rounds=2):
-    dim = 2
+    dim = 6  # 1 for 1D maps, 2 for 2D maps, 6 for hyperchaotic map
     
     I = I.astype(np.uint8)
     M, N = I.shape
@@ -67,24 +78,39 @@ def Encrypt(I, rounds=2):
     SS = []
 
     for round_iter in range(rounds):
-        P = I.flatten().astype(np.float64)
-
-        x0 = (np.sum(P) + MN) / (MN + 2**23)
-        y0 = 0.5 #maybe x1 = np.mod(x0*1e6, 1)
+        P = I.astype(np.float64)
         
         seq = np.zeros(MN)
         
         if dim == 1:
-            x = x0
+            P = I.flatten()
             for i in range(MN):
-                x = cosine_polynomial_map(x)
+                x = sine_map(P[i])
                 seq[i] = x
         elif dim == 2:
-            x, y = x0, y0
-            for i in range(MN):
-                x, y = henon_map(x, y)
-                seq[i] = (x + y)
+            for i in range(M):
+                for j in range(N):  
+                    x, y = gingerbread_man_map(P[i,j], P[i,j])
+                    seq[i] = x+y
+        elif dim == 6:
+            P = I.flatten().astype(np.float64)
+            x = [(np.sum(P) + MN) / (MN + (2**23))]
+            for _ in range(5):
+                x.append(np.mod(x[-1] * 1e6, 1.0))
 
+            # Solve ODE
+            N0 = 0.9865 * MN / 3
+            MN3 = int(np.ceil(MN / 3))
+            t_span = (N0, MN3)
+            t_eval = np.linspace(N0, MN3, MN3)
+
+            sol = solve_ivp(hyperchaotic_ode, t_span, x, t_eval=t_eval, method='RK45', rtol=1e-6, atol=1e-9)
+
+            # Use x1, x3, x5 from solution (columns 0, 2, 4)
+            seq = sol.y[[0, 2, 4], :].T.flatten()[:MN]
+
+        P = P.flatten()
+        
         S = np.argsort(seq)
         SS.append(S)
 
@@ -147,7 +173,7 @@ def Decrypt(I_enc, SS):
 
 
 #Usage Example
-I = cv2.imread("files/peppers_color.tif",0)
+I = cv2.imread("files/boat.tiff",0)
 M, N = I.shape
 
 if M % 2 == 1:
@@ -181,11 +207,11 @@ plt.title('Decrypted Image')
 
 
 
-y1 = I.flatten()
+y1 = I_enc.flatten()
 y2 = I_dec.flatten()
 MSE = np.sum((y1 - y2) ** 2) / len(y1)
 
-impsnr = cv2.PSNR(I_dec, I)
+impsnr = cv2.PSNR(I_dec, I_enc)
 
 print(f'MSE: {MSE}')
 print(f'PSNR: {impsnr}')
