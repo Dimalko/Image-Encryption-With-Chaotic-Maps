@@ -3,6 +3,7 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import solve_ivp
+from tests import Tests as t
 
 
 #1D Chaotic Maps
@@ -60,6 +61,7 @@ def hyperchaotic_ode(t, x, a=10, b=8/3, c=28, d=-1, e=8, r=3):
 
 
 
+
 #Encrypt Method
 def Encrypt(I, rounds=2):
     dim = 6  # 1 for 1D maps, 2 for 2D maps, 6 for hyperchaotic map
@@ -90,7 +92,7 @@ def Encrypt(I, rounds=2):
         elif dim == 2:
             for i in range(M):
                 for j in range(N):  
-                    x, y = gingerbread_man_map(P[i,j], P[i,j])
+                    x, y = henon_map(P[i,j], P[i,j])
                     seq[i] = x+y
         elif dim == 6:
             P = I.flatten().astype(np.float64)
@@ -172,6 +174,8 @@ def Decrypt(I_enc, SS):
     return C.astype(np.uint8)
 
 
+
+
 #Usage Example
 I = cv2.imread("files/boat.tiff",0)
 M, N = I.shape
@@ -207,26 +211,47 @@ plt.title('Decrypted Image')
 
 
 
-y1 = I_enc.flatten()
+y1 = I.flatten()
 y2 = I_dec.flatten()
 MSE = np.sum((y1 - y2) ** 2) / len(y1)
 
-impsnr = cv2.PSNR(I_dec, I_enc)
+impsnr = cv2.PSNR(I, I_dec)
 
-print(f'MSE: {MSE}')
+print(f'\nMSE: {MSE}')
 print(f'PSNR: {impsnr}')
 
+# Testing Entropy
+entropy_original = t.calculate_entropy(I)
+entropy_encrypted = t.calculate_entropy(I_enc)
+entropy_decrypted = t.calculate_entropy(I_dec)
 
-plt.subplot(2, 3, 4)
-plt.hist(I.ravel(), bins=256, color='blue')
-plt.title("Histogram - Original Image")
+print(f"\nEntropy of original image: {entropy_original:.4f}")
+print(f"Entropy of encrypted image: {entropy_encrypted:.4f}")
+print(f"Entropy of decrypted image: {entropy_decrypted:.4f}")
 
-plt.subplot(2, 3, 5)
-plt.hist(I_enc.ravel(), bins=256, color='red')
-plt.title("Histogram - Encrypted Image")
+# Testing Correlation Coefficient
+results = t.correlation_coefficient(I_enc)
+print("\nCorrelation Coefficients (Encrypted Image):")
+for direction, value in results.items():
+    print(f"{direction}: {value:.5f}")
 
-plt.subplot(2, 3, 6)
-plt.hist(I_dec.ravel(), bins=256, color='green')
-plt.title("Histogram - Decrypted Image")
+# Testing Differential Attack
+I_ch = I.copy().astype(np.float64)
+I_ch[0, 0] = (I_ch[0, 0] + 1) % 256  # Change one pixel
 
+ # Encrypt the changed by one pixel image
+I_enc_ch, _ = Encrypt(I_ch, rounds)
+
+npcr, uaci = t.differential_attack(I_enc, I_enc_ch)
+
+print(f"\nNPCR: {npcr:.4f}%")
+print(f"UACI: {uaci:.4f}%")
+
+fig, axs = plt.subplots(1, 3, figsize=(18, 4))
+
+chi2_orig = t.plot_histogram_with_chi2(I, "Original Image", axs[0])
+chi2_enc = t.plot_histogram_with_chi2(I_enc, "Encrypted Image", axs[1])
+chi2_dec = t.plot_histogram_with_chi2(I_dec, "Decrypted Image", axs[2])
+
+plt.tight_layout()
 plt.show()
