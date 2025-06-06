@@ -64,7 +64,7 @@ def hyperchaotic_ode(t, x, a=10, b=8/3, c=28, d=-1, e=8, r=3):
 
 #Encrypt Method
 def Encrypt(I, rounds=2):
-    dim = 6  # 1 for 1D maps, 2 for 2D maps, 6 for hyperchaotic map
+    dim = 1  # 1 for 1D maps, 2 for 2D maps, 6 for hyperchaotic map
     
     I = I.astype(np.uint8)
     M, N = I.shape
@@ -80,22 +80,22 @@ def Encrypt(I, rounds=2):
     SS = []
 
     for round_iter in range(rounds):
-        P = I.astype(np.float64)
-        
+        P = I.flatten().astype(np.float64)
+
         seq = np.zeros(MN)
         
         if dim == 1:
-            P = I.flatten()
             for i in range(MN):
-                x = sine_map(P[i])
+                x2= P[(2*i) % len(P)]
+                x = tent_map(x2)
                 seq[i] = x
         elif dim == 2:
-            for i in range(M):
-                for j in range(N):  
-                    x, y = henon_map(P[i,j], P[i,j])
-                    seq[i] = x+y
+            for i in range(MN): 
+                x2= P[(2*i) % len(P)]
+                y2 = P[(2*i + 1) % len(P)]
+                x, y = lozi_map(x2, y2)
+                seq[i] = x+y
         elif dim == 6:
-            P = I.flatten().astype(np.float64)
             x = [(np.sum(P) + MN) / (MN + (2**23))]
             for _ in range(5):
                 x.append(np.mod(x[-1] * 1e6, 1.0))
@@ -110,8 +110,6 @@ def Encrypt(I, rounds=2):
 
             # Use x1, x3, x5 from solution (columns 0, 2, 4)
             seq = sol.y[[0, 2, 4], :].T.flatten()[:MN]
-
-        P = P.flatten()
         
         S = np.argsort(seq)
         SS.append(S)
@@ -215,7 +213,7 @@ y1 = I.flatten()
 y2 = I_dec.flatten()
 MSE = np.sum((y1 - y2) ** 2) / len(y1)
 
-impsnr = cv2.PSNR(I, I_dec)
+impsnr = t.psnr(I, I_dec)
 
 print(f'\nMSE: {MSE}')
 print(f'PSNR: {impsnr}')

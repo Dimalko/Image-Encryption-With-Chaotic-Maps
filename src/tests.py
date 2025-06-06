@@ -1,6 +1,5 @@
 import numpy as np
 import random
-import cv2
 
 class Tests:
     
@@ -97,3 +96,16 @@ class Tests:
         ax.legend()
 
         return chi2
+
+
+    def psnr(Io, Id):
+        Io = Io.astype(np.float64)
+        Id = Id.astype(np.float64)
+
+        mse = np.mean((Io - Id) ** 2)
+        if mse == 0:
+            return float('inf')
+        
+        psnr_value = 10 * np.log10((255.0 ** 2) / mse)
+
+        return psnr_value
