@@ -139,5 +139,5 @@ _ = t.plot_histogram_with_chi2(I_enc, "Encrypted Histogram", axs[3, 1])
 _ = t.plot_histogram_with_chi2(I_dec, "Decrypted Histogram", axs[3, 2])
 
 # Clean layout
-plt.tight_layout(rect=[0, 0.03, 1, 0.95])  # leave space for suptitle
+plt.tight_layout(rect=[0, 0.03, 1, 0.95]) 
 plt.show()
