@@ -48,7 +48,7 @@ print(f'PSNR: {impsnr}')
 #data cut
 I_enc_c = I_enc.copy()
 I_enc_c[:128, :128] = 0 
-I_enc_c = (I_enc_c * 255)
+I_enc_c = I_enc_c.astype(np.uint8)
 I_dec_c = d.decrypt(I_enc_c, SX)
 impsnr = t.psnr(I, I_dec_c)
 print("\ndata cut of 128x128")
@@ -56,7 +56,7 @@ print(f'PSNR: {impsnr}')
 
 I_enc_c_2 = I_enc.copy()
 I_enc_c_2[:64, :64] = 0 
-I_enc_c_2 = (I_enc_c_2 * 255)
+I_enc_c_2 = I_enc_c_2.astype(np.uint8)
 I_dec_c_2 = d.decrypt(I_enc_c_2, SX)
 impsnr = t.psnr(I, I_dec_c_2)
 print("\ndata cut of 64x64")
@@ -139,5 +139,5 @@ _ = t.plot_histogram_with_chi2(I_enc, "Encrypted Histogram", axs[3, 1])
 _ = t.plot_histogram_with_chi2(I_dec, "Decrypted Histogram", axs[3, 2])
 
 # Clean layout
-plt.tight_layout(rect=[0, 0.03, 1, 0.95])  # leave space for suptitle
+plt.tight_layout(rect=[0, 0.03, 1, 0.95]) 
 plt.show()
