@@ -31,14 +31,16 @@ I_dec = d.decrypt(I_enc, SX)
 
 # Testing PSNR
 #noise
-I_enc_n = random_noise(I_enc, mode='s&p', amount=0.002)
+I_enc_float = I_enc / 255.0
+
+I_enc_n = random_noise(I_enc_float, mode='s&p', amount=0.002)
 I_enc_n = (I_enc_n * 255).astype(np.uint8)
 I_dec_n = d.decrypt(I_enc_n, SX)
 impsnr = t.psnr(I, I_dec_n)
 print("\nSalt and Pepper with noise level 0.002")
 print(f'PSNR: {impsnr}')
 
-I_enc_n_2 = random_noise(I_enc, mode='s&p', amount=0.005)
+I_enc_n_2 = random_noise(I_enc_float, mode='s&p', amount=0.005)
 I_enc_n_2 = (I_enc_n_2 * 255).astype(np.uint8)
 I_dec_n_2 = d.decrypt(I_enc_n_2, SX)
 impsnr = t.psnr(I, I_dec_n_2)
@@ -48,7 +50,7 @@ print(f'PSNR: {impsnr}')
 #data cut
 I_enc_c = I_enc.copy()
 I_enc_c[:128, :128] = 0 
-I_enc_c = (I_enc_c * 255)
+I_enc_c = I_enc_c.astype(np.uint8)
 I_dec_c = d.decrypt(I_enc_c, SX)
 impsnr = t.psnr(I, I_dec_c)
 print("\ndata cut of 128x128")
@@ -56,7 +58,7 @@ print(f'PSNR: {impsnr}')
 
 I_enc_c_2 = I_enc.copy()
 I_enc_c_2[:64, :64] = 0 
-I_enc_c_2 = (I_enc_c_2 * 255)
+I_enc_c_2 = I_enc_c_2.astype(np.uint8)
 I_dec_c_2 = d.decrypt(I_enc_c_2, SX)
 impsnr = t.psnr(I, I_dec_c_2)
 print("\ndata cut of 64x64")
